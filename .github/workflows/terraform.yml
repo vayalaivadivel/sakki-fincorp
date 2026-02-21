@@ -95,11 +95,11 @@ jobs:
 
       # 7️⃣ Terraform Init
       - name: Terraform Init
-        run: terraform -chdir=terraform/infra init -reconfigure terraform/infra
+        run: terraform -chdir=terraform/infra init -reconfigure
 
       # 8️⃣ Terraform Plan
       - name: Terraform Plan
-        run: terraform -chdir=terraform/infra plan -out=tfplan terraform/infra
+        run: terraform -chdir=terraform/infra plan -out=tfplan
 
       # 9️⃣ Terraform Apply
       - name: Terraform Apply
@@ -109,7 +109,7 @@ jobs:
       # 🔟 Terraform Destroy
       - name: Terraform Destroy
         if: ${{ github.event.inputs.action == 'destroy' }}
-        run: terraform -chdir=terraform/infra destroy -auto-approve terraform/infra
+        run: terraform -chdir=terraform/infra destroy -auto-approve
 
       # 1️⃣1️⃣ List state (verification)
       - name: Terraform State List
