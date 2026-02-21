@@ -10,6 +10,11 @@ on:
         options:
           - apply
           - destroy
+      deploy_confirmation:
+        description: 'Type yes to confirm deployment'
+        required: true
+        default: 'no'
+
 
 jobs:
   terraform:
