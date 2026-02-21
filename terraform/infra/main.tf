@@ -229,9 +229,9 @@ resource "aws_db_instance" "mysql" {
   publicly_accessible    = false
   backup_retention_period = 7
   storage_encrypted      = true
-  deletion_protection    = true
-
-  skip_final_snapshot    = true
+  deletion_protection    = false
+  skip_final_snapshot    = false
+  final_snapshot_identifier = "private-db-final-${timestamp()}"
 }
 
 ###############################
