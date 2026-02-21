@@ -39,10 +39,10 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform Init
-        run: terraform init -reconfigure
-
+        run: terraform init -reconfigure terraform/infra
+        
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -out=tfplan terraform/infra
 
       - name: Terraform Apply
         if: ${{ github.event.inputs.action == 'apply' }}
