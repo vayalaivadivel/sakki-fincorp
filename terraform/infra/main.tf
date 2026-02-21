@@ -233,9 +233,8 @@ resource "aws_db_instance" "mysql" {
 
   # Create a valid snapshot name (replace : with -)
   skip_final_snapshot      = false
-  final_snapshot_identifier = "private-db-final-${formatdate("YYYYMMDD-HHMMSS", timestamp())}"
+  final_snapshot_identifier = "private-db-final-${formatdate("20060102-150405", timestamp())}"
 
- 
   lifecycle {
     prevent_destroy = false
   }
