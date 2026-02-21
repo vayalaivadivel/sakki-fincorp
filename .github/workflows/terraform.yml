@@ -1,4 +1,4 @@
-name: Terraform CI/CD (Fresh Start)
+name: Infra creation
 
 on:
   workflow_dispatch:
