@@ -95,25 +95,25 @@ jobs:
 
       # 7️⃣ Terraform Init
       - name: Terraform Init
-        run: terraform init -reconfigure terraform/infra
+        run: terraform -chdir=terraform/infra init -reconfigure terraform/infra
 
       # 8️⃣ Terraform Plan
       - name: Terraform Plan
-        run: terraform plan -out=tfplan terraform/infra
+        run: terraform -chdir=terraform/infra plan -out=tfplan terraform/infra
 
       # 9️⃣ Terraform Apply
       - name: Terraform Apply
         if: ${{ github.event.inputs.action == 'apply' }}
-        run: terraform apply -auto-approve tfplan
+        run: terraform -chdir=terraform/infra apply -auto-approve tfplan
 
       # 🔟 Terraform Destroy
       - name: Terraform Destroy
         if: ${{ github.event.inputs.action == 'destroy' }}
-        run: terraform destroy -auto-approve terraform/infra
+        run: terraform -chdir=terraform/infra destroy -auto-approve terraform/infra
 
       # 1️⃣1️⃣ List state (verification)
       - name: Terraform State List
-        run: terraform state list
+        run: terraform -chdir=terraform/infra state list
 
       # 1️⃣2️⃣ Summary: Count resources
       - name: Terraform Resource Summary
