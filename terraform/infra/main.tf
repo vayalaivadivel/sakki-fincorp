@@ -9,6 +9,23 @@ resource "aws_vpc" "main" {
 }
 
 ###############################
+# Route Table
+###############################
+resource "aws_route_table" "private_rt" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_route_table_association" "private_1_assoc" {
+  subnet_id      = aws_subnet.private_1.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+resource "aws_route_table_association" "private_2_assoc" {
+  subnet_id      = aws_subnet.private_2.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+###############################
 # Private Subnets (Multi-AZ)
 ###############################
 resource "aws_subnet" "private_1" {
@@ -78,6 +95,26 @@ resource "aws_security_group" "rds_sg" {
     to_port         = 3306
     protocol        = "tcp"
     security_groups = [aws_security_group.microservice_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# VPC Endpoint SG (Dedicated)
+resource "aws_security_group" "vpc_endpoint_sg" {
+  name   = "vpc-endpoint-sg"
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
@@ -187,6 +224,13 @@ resource "aws_db_instance" "mysql" {
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+  multi_az               = true
+  publicly_accessible    = false
+  backup_retention_period = 7
+  storage_encrypted      = true
+  deletion_protection    = true
+
   skip_final_snapshot    = true
 }
 
@@ -198,7 +242,8 @@ resource "aws_vpc_endpoint" "ssm" {
   service_name      = "com.amazonaws.${var.region}.ssm"
   vpc_endpoint_type = "Interface"
   subnet_ids        = [aws_subnet.private_1.id, aws_subnet.private_2.id]
-  security_group_ids = [aws_security_group.microservice_sg.id]
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
 }
 
 resource "aws_vpc_endpoint" "ec2messages" {
@@ -206,7 +251,8 @@ resource "aws_vpc_endpoint" "ec2messages" {
   service_name      = "com.amazonaws.${var.region}.ec2messages"
   vpc_endpoint_type = "Interface"
   subnet_ids        = [aws_subnet.private_1.id, aws_subnet.private_2.id]
-  security_group_ids = [aws_security_group.microservice_sg.id]
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
 }
 
 resource "aws_vpc_endpoint" "ssmmessages" {
@@ -214,5 +260,6 @@ resource "aws_vpc_endpoint" "ssmmessages" {
   service_name      = "com.amazonaws.${var.region}.ssmmessages"
   vpc_endpoint_type = "Interface"
   subnet_ids        = [aws_subnet.private_1.id, aws_subnet.private_2.id]
-  security_group_ids = [aws_security_group.microservice_sg.id]
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
 }
