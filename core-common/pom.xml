@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.mycompany.app</groupId>
+        <artifactId>kafka-ord-pay-stk-service</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <groupId>org.mycompany.core.common</groupId>
+    <artifactId>core-common</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>core-common</name>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
+    </properties>
+</project>
