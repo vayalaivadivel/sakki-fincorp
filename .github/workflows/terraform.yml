@@ -28,6 +28,12 @@ jobs:
       - uses: actions/checkout@v4
 
       #############################################
+      # CHECK AWS OIDC POLICY
+      #############################################
+      - name: Test AWS Identity
+        run: aws sts get-caller-identity
+
+      #############################################
       # AWS OIDC LOGIN
       #############################################
       - name: Configure AWS credentials
