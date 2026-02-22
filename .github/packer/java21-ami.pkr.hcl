@@ -45,15 +45,15 @@ source "amazon-ebs" "java21" {
   # subnet_id = "subnet-xxxxxxxx"
 
   # Use latest Amazon Linux 2 as base AMI
-  source_ami_filter {
-    filters = {
-      name                = "amzn2-ami-hvm-*-x86_64-gp2"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    owners      = ["137112412989"]
-    most_recent = true
+source_ami_filter {
+  filters = {
+    name                = "al2023-ami-*-x86_64*"
+    root-device-type    = "ebs"
+    virtualization-type = "hvm"
   }
+  owners      = ["137112412989"]
+  most_recent = true
+}
 
   # Tags
   tags = {
