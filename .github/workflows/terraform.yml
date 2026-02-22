@@ -2,6 +2,14 @@ name: Build AMI + Deploy Full Private Infra
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
 
 permissions:
   id-token: write
@@ -10,6 +18,11 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+      AWS_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +34,17 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::091756093438:role/github-oidc-role
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-          
       #############################################
-      # CHECK IF AMI EXISTS
+      # CHECK IF AMI EXISTS (Per Environment)
       #############################################
       - name: Check Existing AMI
         id: check_ami
         run: |
           AMI_ID=$(aws ec2 describe-images \
             --owners self \
-            --filters "Name=tag:Name,Values=java21-golden" \
+            --filters "Name=tag:Name,Values=java21-${ENV}" \
             --query 'Images | sort_by(@,&CreationDate)[-1].ImageId' \
             --output text)
 
@@ -58,8 +70,14 @@ jobs:
 
       - name: Packer Build
         if: steps.check_ami.outputs.exists == 'false'
-        run: packer build packer/java21-ami.pkr.hcl
-        
+        run: |
+          packer build \
+            -var "env=${ENV}" \
+            packer/java21-ami.pkr.hcl
+
+      #############################################
+      # SET AMI ID
+      #############################################
       - name: Set AMI ID
         run: |
           if [ "${{ steps.check_ami.outputs.exists }}" == "true" ]; then
@@ -77,13 +95,16 @@ jobs:
 
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="key=${ENV}/terraform.tfstate"
 
       - name: Terraform Apply
         working-directory: terraform
         run: |
           terraform apply -auto-approve \
-            -var="microservice_ami=${{ env.AMI_ID }}" \
+            -var="env=${ENV}" \
+            -var="microservice_ami=${AMI_ID}" \
             -var="nginx_ami=ami-xxxxxxxx" \
             -var="db_username=admin" \
             -var="db_password=YourStrongPassword123!"
