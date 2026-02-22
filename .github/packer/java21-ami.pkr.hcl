@@ -1,3 +1,11 @@
+packer {
+  required_plugins {
+    amazon = {
+      version = ">= 1.8.0"
+      source  = "github.com/hashicorp/amazon"
+    }
+  }
+}
 variable "env" {
   type    = string
   default = "dev"
@@ -17,6 +25,7 @@ variable "source_ami" {
   type    = string
   default = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023 in us-east-1
 }
+
 
 source "amazon-ebs" "java21" {
   region        = var.region
