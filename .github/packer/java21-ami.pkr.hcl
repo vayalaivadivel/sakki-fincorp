@@ -37,6 +37,7 @@ source "amazon-ebs" "java21" {
   ami_name      = "${var.ami_name_prefix}-{{timestamp}}"
   instance_type = "t3.micro"
   region        = var.region
+  ssh_username  = "ec2-user"  
 
   # Use latest Amazon Linux 2 as base AMI
   source_ami_filter {
