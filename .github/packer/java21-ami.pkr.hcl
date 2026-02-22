@@ -2,8 +2,14 @@
 # Packer HCL2 Template for Java 21 AMI
 ###############################################
 
+
 packer {
   required_version = ">= 1.9.0"
+}
+
+variable "env" {
+  type    = string
+  default = "dev"
 }
 
 variable "java_version" {
@@ -36,10 +42,11 @@ source "amazon-ebs" "java21" {
 
   # ✅ Tags go here
   tags = {
-    Name        = var.ami_name_prefix
-    Environment = "dev"
-  }
+  Name        = "${var.ami_name_prefix}-${var.env}"
+  Environment = var.env
 }
+}
+
 
 build {
   sources = ["source.amazon-ebs.java21"]
