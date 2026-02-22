@@ -1,5 +1,6 @@
 ###############################################
 # Packer HCL2 Template for Java 21 AMI
+# Uses temporary VPC/subnet for baking
 ###############################################
 
 packer {
@@ -37,7 +38,11 @@ source "amazon-ebs" "java21" {
   ami_name      = "${var.ami_name_prefix}-{{timestamp}}"
   instance_type = "t3.micro"
   region        = var.region
-  ssh_username  = "ec2-user"  
+  ssh_username  = "ec2-user"
+
+  # Optional: Specify temporary VPC/subnet if you have one, otherwise Packer creates default
+  # vpc_id    = "vpc-xxxxxxxx"
+  # subnet_id = "subnet-xxxxxxxx"
 
   # Use latest Amazon Linux 2 as base AMI
   source_ami_filter {
@@ -55,6 +60,10 @@ source "amazon-ebs" "java21" {
     Name        = "${var.ami_name_prefix}-${var.env}"
     Environment = var.env
   }
+
+  # Optional: force delete temporary resources after build
+  temporary_security_group = true
+  temporary_key_pair       = true
 }
 
 build {
@@ -70,7 +79,7 @@ build {
     ]
   }
 
-  # Optional: Additional dependencies
+  # Optional: Install additional tools
   provisioner "shell" {
     inline = [
       "sudo yum install -y git wget curl unzip"
