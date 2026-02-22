@@ -1,4 +1,4 @@
-name: Build AMI + Deploy Full Private Infra
+name: Build AMI + Manage Full Private Infra
 
 on:
   workflow_dispatch:
@@ -10,6 +10,13 @@ on:
         options:
           - dev
           - prod
+      action:
+        description: "Select action"
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
 
 permissions:
   id-token: write
@@ -22,6 +29,7 @@ jobs:
 
     env:
       ENV: ${{ github.event.inputs.environment }}
+      ACTION: ${{ github.event.inputs.action }}
       AWS_REGION: us-east-1
 
     steps:
@@ -36,17 +44,14 @@ jobs:
           role-to-assume: arn:aws:iam::091756093438:role/github-oidc-role
           aws-region: ${{ env.AWS_REGION }}
 
-      #############################################
-      # CHECK AWS OIDC POLICY
-      #############################################
       - name: Test AWS Identity
         run: aws sts get-caller-identity
 
-
       #############################################
-      # CHECK IF AMI EXISTS (Per Environment)
+      # BUILD AMI ONLY IF ACTION=apply
       #############################################
       - name: Check Existing AMI
+        if: ${{ env.ACTION == 'apply' }}
         id: check_ami
         run: |
           AMI_ID=$(aws ec2 describe-images \
@@ -64,30 +69,25 @@ jobs:
             echo "No AMI found"
           fi
 
-      #############################################
-      # BUILD AMI ONLY IF NOT EXISTS
-      #############################################
       - name: Setup Packer
-        if: steps.check_ami.outputs.exists == 'false'
+        if: ${{ env.ACTION == 'apply' && steps.check_ami.outputs.exists == 'false' }}
         uses: hashicorp/setup-packer@v3
 
       - name: Packer Init
-        if: steps.check_ami.outputs.exists == 'false'
+        if: ${{ env.ACTION == 'apply' && steps.check_ami.outputs.exists == 'false' }}
         working-directory: .github/packer
         run: packer init java21-ami.pkr.hcl
 
       - name: Packer Build
-        if: steps.check_ami.outputs.exists == 'false'
+        if: ${{ env.ACTION == 'apply' && steps.check_ami.outputs.exists == 'false' }}
         working-directory: .github/packer
         run: |
           packer build \
             -var "env=${ENV}" \
             java21-ami.pkr.hcl
 
-      #############################################
-      # SET AMI ID
-      #############################################
       - name: Set AMI ID
+        if: ${{ env.ACTION == 'apply' }}
         run: |
           if [ "${{ steps.check_ami.outputs.exists }}" == "true" ]; then
             echo "AMI_ID=${{ steps.check_ami.outputs.ami_id }}" >> $GITHUB_ENV
@@ -97,23 +97,32 @@ jobs:
           fi
 
       #############################################
-      # TERRAFORM DEPLOY
+      # TERRAFORM INIT
       #############################################
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         working-directory: terraform
-        run: |
-          terraform init \
-            -backend-config="key=${ENV}/terraform.tfstate"
+        run: terraform init -backend-config="key=${ENV}/terraform.tfstate"
 
-      - name: Terraform Apply
+      #############################################
+      # TERRAFORM APPLY OR DESTROY
+      #############################################
+      - name: Terraform Apply/Destroy
         working-directory: terraform
         run: |
-          terraform apply -auto-approve \
-            -var="env=${ENV}" \
-            -var="microservice_ami=${AMI_ID}" \
-            -var="nginx_ami=ami-xxxxxxxx" \
-            -var="db_username=admin" \
-            -var="db_password=YourStrongPassword123!"
+          if [ "${ACTION}" == "apply" ]; then
+            terraform apply -auto-approve \
+              -var="env=${ENV}" \
+              -var="microservice_ami=${AMI_ID}" \
+              -var="nginx_ami=ami-xxxxxxxx" \
+              -var="db_username=admin" \
+              -var="db_password=YourStrongPassword123!"
+          else
+            terraform destroy -auto-approve \
+              -var="env=${ENV}" \
+              -var="microservice_ami=${AMI_ID}" \
+              -var="nginx_ami=ami-xxxxxxxx" \
+              -var="db_username=admin" \
+              -var="db_password=YourStrongPassword123!"
