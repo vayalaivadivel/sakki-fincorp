@@ -1,6 +1,6 @@
 ###############################################
 # Packer HCL2 Template for Java 21 AMI
-# Uses temporary VPC/subnet for baking
+# Amazon Linux 2023 + Java 21 Corretto RPM
 ###############################################
 
 packer {
@@ -40,22 +40,21 @@ source "amazon-ebs" "java21" {
   region        = var.region
   ssh_username  = "ec2-user"
 
-  # Optional: Specify temporary VPC/subnet if you have one, otherwise Packer creates default
-  vpc_id    = "vpc-0b6151bb9b43b3c35"
+  # Optional: Use a specific VPC/subnet if needed
+  # vpc_id    = "vpc-xxxxxxxx"
   # subnet_id = "subnet-xxxxxxxx"
 
-  # Use latest Amazon Linux 2 as base AMI
-source_ami_filter {
-  filters = {
-    name                = "al2023-ami-*-x86_64*"
-    root-device-type    = "ebs"
-    virtualization-type = "hvm"
+  # Amazon Linux 2023 base AMI
+  source_ami_filter {
+    filters = {
+      name                = "al2023-ami-*-x86_64*"
+      root-device-type    = "ebs"
+      virtualization-type = "hvm"
+    }
+    owners      = ["137112412989"]
+    most_recent = true
   }
-  owners      = ["137112412989"]
-  most_recent = true
-}
 
-  # Tags
   tags = {
     Name        = "${var.ami_name_prefix}-${var.env}"
     Environment = var.env
@@ -65,20 +64,21 @@ source_ami_filter {
 build {
   sources = ["source.amazon-ebs.java21"]
 
-  # Install Java 21
+  # Install Java 21 via RPM
   provisioner "shell" {
     inline = [
-      "sudo yum update -y",
-      "sudo amazon-linux-extras enable corretto${var.java_version}",
-      "sudo yum install -y java-${var.java_version}-amazon-corretto-devel",
+      "sudo dnf update -y",
+      "sudo dnf install -y wget",
+      "wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm",
+      "sudo dnf install -y amazon-corretto-21-x64-linux-jdk.rpm",
       "java -version"
     ]
   }
 
-  # Optional: Install additional tools
+  # Optional: install additional tools
   provisioner "shell" {
     inline = [
-      "sudo yum install -y git wget curl unzip"
+      "sudo dnf install -y git wget curl unzip"
     ]
   }
 }
