@@ -1,11 +1,5 @@
-###############################################
-# Packer HCL2 Template for Java 21 AMI
-# Amazon Linux 2023 + Java 21 Corretto RPM
-###############################################
-
 packer {
   required_version = ">= 1.9.0"
-
   required_plugins {
     amazon = {
       version = ">= 1.8.0"
@@ -14,71 +8,70 @@ packer {
   }
 }
 
-variable "env" {
-  type    = string
-  default = "dev"
-}
-
-variable "java_version" {
-  type    = string
-  default = "21"
-}
-
-variable "region" {
+variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
 
-variable "ami_name_prefix" {
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
+variable "ami_name" {
   type    = string
-  default = "java21-golden"
+  default = "java21-golden-{{timestamp}}"
 }
 
 source "amazon-ebs" "java21" {
-  ami_name      = "${var.ami_name_prefix}-{{timestamp}}"
-  instance_type = "t3.micro"
-  region        = var.region
-  ssh_username  = "ec2-user"
+  region                  = var.aws_region
+  instance_type           = "t3.micro"
+  ami_name                = var.ami_name
+  vpc_id                  = var.vpc_id
+  subnet_id               = var.subnet_ids[0]
+  associate_public_ip_address = true
 
-  # Optional: Use a specific VPC/subnet if needed
-  # vpc_id    = "vpc-xxxxxxxx"
-  # subnet_id = "subnet-xxxxxxxx"
+  ssh_username = "ec2-user"
 
-  # Amazon Linux 2023 base AMI
   source_ami_filter {
     filters = {
-      name                = "al2023-ami-*-x86_64*"
+      name                = "al2023-ami-kernel-default*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
-    owners      = ["137112412989"]
+    owners      = ["amazon"]
     most_recent = true
-  }
-
-  tags = {
-    Name        = "${var.ami_name_prefix}-${var.env}"
-    Environment = var.env
   }
 }
 
 build {
   sources = ["source.amazon-ebs.java21"]
 
-  # Install Java 21 via RPM
   provisioner "shell" {
     inline = [
+      # Update base OS packages
       "sudo dnf update -y",
-      "sudo dnf install -y wget",
-      "wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm",
-      "sudo dnf install -y amazon-corretto-21-x64-linux-jdk.rpm",
+
+      # Install required utilities (skip curl to avoid conflict)
+      "sudo dnf install -y wget unzip git",
+
+      # Download and install Java 21 Corretto RPM
+      "wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm -O /tmp/corretto21.rpm",
+      "sudo dnf install -y /tmp/corretto21.rpm",
+
+      # Verify Java
       "java -version"
     ]
   }
 
-  # Optional: install additional tools
+  # Optional cleanup to reduce AMI size
   provisioner "shell" {
     inline = [
-      "sudo dnf install -y git wget curl unzip"
+      "sudo dnf clean all",
+      "sudo rm -rf /tmp/* /var/tmp/*"
     ]
   }
 }
