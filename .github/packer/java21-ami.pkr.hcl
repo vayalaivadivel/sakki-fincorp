@@ -2,7 +2,6 @@
 # Packer HCL2 Template for Java 21 AMI
 ###############################################
 
-
 packer {
   required_version = ">= 1.9.0"
 }
@@ -13,14 +12,17 @@ variable "env" {
 }
 
 variable "java_version" {
+  type    = string
   default = "21"
 }
 
 variable "region" {
+  type    = string
   default = "us-east-1"
 }
 
 variable "ami_name_prefix" {
+  type    = string
   default = "java21-golden"
 }
 
@@ -40,13 +42,12 @@ source "amazon-ebs" "java21" {
     most_recent = true
   }
 
-  # ✅ Tags go here
+  # Tags
   tags = {
-  Name        = "${var.ami_name_prefix}-${var.env}"
-  Environment = var.env
+    Name        = "${var.ami_name_prefix}-${var.env}"
+    Environment = var.env
+  }
 }
-}
-
 
 build {
   sources = ["source.amazon-ebs.java21"]
