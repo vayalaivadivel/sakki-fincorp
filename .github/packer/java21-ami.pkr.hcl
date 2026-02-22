@@ -60,10 +60,6 @@ source "amazon-ebs" "java21" {
     Name        = "${var.ami_name_prefix}-${var.env}"
     Environment = var.env
   }
-
-  # Optional: force delete temporary resources after build
-  temporary_security_group = true
-  temporary_key_pair       = true
 }
 
 build {
