@@ -1,77 +1,72 @@
-packer {
-  required_version = ">= 1.9.0"
-  required_plugins {
-    amazon = {
-      version = ">= 1.8.0"
-      source  = "github.com/hashicorp/amazon"
-    }
-  }
+# java21-ami.pkr.hcl
+
+# ==============================
+# Variables
+# ==============================
+variable "env" {
+  type    = string
+  default = "dev"
+  description = "Environment name (dev, prod, etc.)"
 }
 
-variable "aws_region" {
+variable "region" {
   type    = string
   default = "us-east-1"
 }
 
-variable "vpc_id" {
-  type = string
+variable "instance_type" {
+  type    = string
+  default = "t3.medium"
 }
 
-variable "subnet_ids" {
-  type = list(string)
+variable "source_ami" {
+  type    = string
+  default = "ami-01aad667f16a905c7" # Amazon Linux 2023 minimal
 }
 
 variable "ami_name" {
   type    = string
-  default = "java21-golden-{{timestamp}}"
+  default = "${var.env}-java21-golden-{{timestamp}}"
 }
 
+# ==============================
+# Builder
+# ==============================
 source "amazon-ebs" "java21" {
-  region                  = var.aws_region
-  instance_type           = "t3.micro"
-  ami_name                = var.ami_name
-  vpc_id                  = var.vpc_id
-  subnet_id               = var.subnet_ids[0]
+  region                 = var.region
+  instance_type          = var.instance_type
+  source_ami             = var.source_ami
+  ssh_username           = "ec2-user"
+  ami_name               = var.ami_name
   associate_public_ip_address = true
-
-  ssh_username = "ec2-user"
-
-  source_ami_filter {
-    filters = {
-      name                = "al2023-ami-kernel-default*"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    owners      = ["amazon"]
-    most_recent = true
-  }
 }
 
+# ==============================
+# Provisioners
+# ==============================
 build {
   sources = ["source.amazon-ebs.java21"]
 
   provisioner "shell" {
     inline = [
-      # Update base OS packages
-      "sudo dnf update -y",
+      "set -e",
+      "echo 'Updating system packages...'",
+      "sudo dnf -y update",
 
-      # Install required utilities (skip curl to avoid conflict)
-      "sudo dnf install -y wget unzip git",
+      # Remove conflicting curl-minimal if exists
+      "sudo dnf remove -y curl-minimal || true",
 
-      # Download and install Java 21 Corretto RPM
-      "wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm -O /tmp/corretto21.rpm",
-      "sudo dnf install -y /tmp/corretto21.rpm",
+      # Install standard curl, wget, and unzip
+      "sudo dnf install -y curl wget unzip",
 
-      # Verify Java
-      "java -version"
-    ]
-  }
+      # Download and install Amazon Corretto 21 manually
+      "echo 'Installing Amazon Corretto 21...'",
+      "curl -L -o /tmp/amazon-corretto-21-x64-linux-jdk.rpm https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm",
+      "sudo dnf install -y /tmp/amazon-corretto-21-x64-linux-jdk.rpm",
 
-  # Optional cleanup to reduce AMI size
-  provisioner "shell" {
-    inline = [
-      "sudo dnf clean all",
-      "sudo rm -rf /tmp/* /var/tmp/*"
+      # Verify installation
+      "java -version",
+      "javac -version"
     ]
   }
 }
