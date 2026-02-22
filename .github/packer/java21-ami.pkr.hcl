@@ -41,7 +41,7 @@ source "amazon-ebs" "java21" {
   ssh_username  = "ec2-user"
 
   # Optional: Specify temporary VPC/subnet if you have one, otherwise Packer creates default
-  # vpc_id    = "vpc-xxxxxxxx"
+  vpc_id    = "vpc-0b6151bb9b43b3c35"
   # subnet_id = "subnet-xxxxxxxx"
 
   # Use latest Amazon Linux 2 as base AMI
