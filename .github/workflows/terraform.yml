@@ -73,14 +73,16 @@ jobs:
 
       - name: Packer Init
         if: steps.check_ami.outputs.exists == 'false'
-        run: packer init packer/java21-ami.pkr.hcl
+        working-directory: .github/packer
+        run: packer init java21-ami.pkr.hcl
 
       - name: Packer Build
         if: steps.check_ami.outputs.exists == 'false'
+        working-directory: .github/packer
         run: |
           packer build \
             -var "env=${ENV}" \
-            packer/java21-ami.pkr.hcl
+            java21-ami.pkr.hcl
 
       #############################################
       # SET AMI ID
