@@ -28,15 +28,16 @@ variable "source_ami" {
 
 
 source "amazon-ebs" "java21" {
-  region        = var.region
-  instance_type = var.instance_type
-  source_ami    = var.source_ami
-  ssh_username  = "ec2-user"
-  ami_name      = "${var.env}-java21-golden-{{timestamp}}"
-  tags = {
-    Name = "${var.env}-java21-golden"
-    Env  = var.env
-  }
+  region           = "us-east-1"
+  source_ami       = "ami-0199fa5fada510433"   # Latest Amazon Linux 2
+  instance_type    = "t3.medium"
+  ssh_username     = "ec2-user"
+  ami_name         = "${var.env}-java21-golden-{{timestamp}}"
+
+  # Optional: if you want to keep it in private VPC
+  vpc_id           = var.vpc_id
+  subnet_id        = var.subnet_id
+  associate_public_ip_address = false
 }
 
 build {
