@@ -26,6 +26,11 @@ variable "source_ami" {
   default = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023 in us-east-1
 }
 
+variable "vpc_id" {
+  type = string
+  default="vpc-0b6151bb9b43b3c35"
+}
+
 
 source "amazon-ebs" "java21" {
   region           = "us-east-1"
@@ -36,7 +41,6 @@ source "amazon-ebs" "java21" {
 
   # Optional: if you want to keep it in private VPC
   vpc_id           = var.vpc_id
-  subnet_id        = var.subnet_id
   associate_public_ip_address = false
 }
 
